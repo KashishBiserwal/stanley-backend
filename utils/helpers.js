@@ -1,0 +1,55 @@
+import nodemailer from 'nodemailer'
+
+const isValidatePaylod = (body, fields) => {
+    if (!body) {
+        return false
+    }
+    for (let i = 0; i < fields.length; i++) {
+        if (!body[fields[i]]) return false
+    }
+    return true
+}
+
+const isValidDateFormat = (date) => {
+    const splitedDate = date.split('-')
+    if (splitedDate.length < 3) {
+        return false
+    }
+    if (splitedDate[0].length < 4) {
+        return false
+    }
+    const convert_month = Number(splitedDate[1])
+    if (Number.isNaN(convert_month) || convert_month < 1 || convert_month > 12) {
+        return false
+    }
+    const convert_date = Number(splitedDate[2])
+    if (Number.isNaN(convert_date) || convert_date < 1 || convert_date > 31) {
+        return false
+    }
+    return true
+}
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_APP_EMAIL,
+        pass: process.env.GMAIL_APP_PASSWORD
+    },
+})
+const sendMail = (to, subject, body) => {
+    transporter.sendMail({
+        from: process.env.GMAIL_APP_EMAIL,
+        to: to,
+        subject: subject,
+        text: body,
+    })
+}
+
+const generateRandomOtp = () => {
+    const otp = Math.floor(100000 + Math.random() * 900000)
+    return otp
+}
+
+const helper = { isValidatePaylod, isValidDateFormat, generateRandomOtp, sendMail }
+export default helper
+
