@@ -169,12 +169,99 @@ const updatePassword = async (req, res, next) => {
     }
 }
 
+const updateUserProfile = async (req, res, next) => {
+    try {
+        const user = req.user
+        const { name, phone, image } = req.body
+        if (!user) {
+            return res.status(200).send({
+                status: 400,
+                error: 'User not found',
+                error_description: 'User does not exist',
+            })
+        }
+        if (!name && !phone && !image) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Invalid request',
+                error_description: 'Name, image or phone are required',
+            })
+        }
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { name: name, phone: phone, profilePic: image },
+        })
+        return res.status(200).send({ status: 200, message: 'User profile updated' })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const deleteAccount = async (req, res, next) => {
+    try {
+        const user = req.user
+        if (!user) {
+            return res.status(200).send({
+                status: 400,
+                error: 'User not found',
+                error_description: 'User does not exist',
+            })
+        }
+        await prisma.user.delete({
+            where: { id: user.id },
+        })
+        return res.status(200).send({ status: 200, message: 'Account deleted' })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const getFaqs = async (req, res, next) => {
+    try {
+        const faqs = await prisma.faq.findMany({orderBy: { createdAt: 'desc' }})
+        return res.status(200).send({ status: 200, message: 'FAQs', faqs: faqs })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const getAudioBooks = async (req, res, next) => {
+    try {
+        const audioBooks = await prisma.audioBook.findMany({
+            orderBy: { createdAt: 'desc' }
+        })
+        return res.status(200).send({ status: 200, message: 'Audio Books', audioBooks: audioBooks })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const getAudioBookById = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const audioBook = await prisma.audioBook.findUnique({
+            where: { id: parseInt(id) },
+        })
+        if (!audioBook) {
+            return res.status(200).send({ status: 400, error: 'Audio Book not found' })
+        }
+        return res.status(200).send({ status: 200, message: 'Audio Book', audioBook: audioBook })
+    } catch (err) {
+        return next(err)
+    }
+}
+
 const userController = {
     getDetails,
     updateUserType,
     sendOtp,
     verifyOtp,
     updatePassword,
+    updateUserProfile,
+    deleteAccount,
+    getFaqs,
+    getAudioBooks,
+    getAudioBookById,
 }
 
 export default userController

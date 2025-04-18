@@ -27,6 +27,27 @@ model User {
   role         Role     @default(USER)
   type         Type?
   otp          Int?
+  profilePic   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Faq {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AudioBook {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  audio       String
+  image       String
+  price       Float
+  status      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
