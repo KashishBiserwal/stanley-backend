@@ -15,5 +15,9 @@ adminRouter.post('/audiobook/create', adminController.createAudioBook)
 adminRouter.get('/audiobook', adminController.getAllAudioBooks)
 adminRouter.get('/audiobook/details/:id', adminController.getAudioBookById)
 adminRouter.delete('/audiobook/delete/:id', adminController.deleteAudioBook)
+adminRouter.post('/video/create', adminController.createVideo)
+adminRouter.get('/video', adminController.getAllVideos)
+adminRouter.get('/video/details/:id', adminController.getVideoById)
+adminRouter.delete('/video/delete/:id', adminController.deleteVideo)
 
 export default adminRouter

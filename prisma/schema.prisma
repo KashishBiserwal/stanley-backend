@@ -51,3 +51,14 @@ model AudioBook {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Video {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  video       String
+  image       String?
+  status      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

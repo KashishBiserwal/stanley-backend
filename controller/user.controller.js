@@ -251,6 +251,32 @@ const getAudioBookById = async (req, res, next) => {
     }
 }
 
+const getVideos = async (req, res, next) => {
+    try {
+        const videos = await prisma.video.findMany({
+            orderBy: { createdAt: 'desc' }
+        })
+        return res.status(200).send({ status: 200, message: 'Videos', videos: videos })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const getVideoById = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const video = await prisma.video.findUnique({
+            where: { id: parseInt(id) },
+        })
+        if (!video) {
+            return res.status(200).send({ status: 400, error: 'Video not found' })
+        }
+        return res.status(200).send({ status: 200, message: 'Video', video: video })
+    } catch (err) {
+        return next(err)
+    }
+}
+
 const userController = {
     getDetails,
     updateUserType,
@@ -262,6 +288,8 @@ const userController = {
     getFaqs,
     getAudioBooks,
     getAudioBookById,
+    getVideos,
+    getVideoById,
 }
 
 export default userController

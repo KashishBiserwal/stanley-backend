@@ -13,5 +13,7 @@ userRouter.delete('/deleteAccount', userController.deleteAccount)
 userRouter.get('/faqs', userController.getFaqs)
 userRouter.get('/audiobooks', userController.getAudioBooks)
 userRouter.get('/audiobooks/:id', userController.getAudioBookById)
+userRouter.get('/videos', userController.getVideos)
+userRouter.get('/videos/:id', userController.getVideoById)
 
 export default userRouter

@@ -446,6 +446,142 @@ const getAudioBookById = async (req, res, next) => {
     }
 }
 
+const createVideo = async (req, res, next) => {
+    try {
+        const { title, description, image, video } = req.body
+        if (!title || !description || !video) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Title, description or video not found',
+                error_description: 'Title, description or video does not exist',
+            })
+        }
+        const createdVideo = await prisma.video.create({
+            data: {
+                title: title,
+                description: description,
+                image: image,
+                video: video
+            }
+        })
+        if (!createdVideo) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video not created',
+                error_description: 'Video does not exist',
+            })
+        }
+        return res.status(200).send({ status: 200, message: 'Video created successfully', video: createdVideo })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const getAllVideos = async (req, res, next) => {
+    try {
+        const videos = await prisma.video.findMany({
+            orderBy: {
+                createdAt: 'desc'
+            },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                image: true,
+                video: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        })
+        if (!videos) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Videos not found',
+                error_description: 'Videos do not exist',
+            })
+        }
+        return res.status(200).send({ status: 200, message: 'Videos details', videos: videos })
+    } catch (err) {
+        return next(err)
+    }
+}
+
+const deleteVideo = async (req, res, next) => {
+    try {
+        const ID = req.params.id
+        if(isNaN(Number(ID))) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video id not found',
+                error_description: 'Video id does not exist',
+            })
+        }
+        const videoId = Number(ID)
+        if (!videoId) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video id not found',
+                error_description: 'Video id does not exist',
+            })
+        }
+        const video = await prisma.video.delete({
+            where: {
+                id: videoId
+            }
+        })
+        if (!video) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video not found',
+                error_description: 'Video does not exist',
+            })
+        }
+        return res.status(200).send({ status: 200, message: 'Video deleted successfully' })
+    } catch (err) {
+        return res.status(200).send({
+            status: 400,
+            error: 'Video not found',
+            error_description: 'Video does not exist',
+        })
+    }
+}
+
+const getVideoById = async (req, res, next) => {
+    try {
+        const ID = req.params.id
+        if(isNaN(Number(ID))) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video id not found',
+                error_description: 'Video id does not exist',
+            })
+        }
+        const videoId = Number(ID)
+        if (!videoId) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video id not found',
+                error_description: 'Video id does not exist',
+            })
+        }
+        const video = await prisma.video.findFirst({
+            where: {
+                id: videoId
+            }
+        })
+        if (!video) {
+            return res.status(200).send({
+                status: 400,
+                error: 'Video not found',
+                error_description: 'Video does not exist',
+            })
+        }
+        return res.status(200).send({ status: 200, message: 'Video details', video: video })
+    } catch (err) {
+        return next(err)
+    }
+}
+
 const adminController = {
     getAllUsers,
     getUserById,
@@ -458,7 +594,11 @@ const adminController = {
     createAudioBook,
     getAllAudioBooks,
     deleteAudioBook,
-    getAudioBookById
+    getAudioBookById,
+    createVideo,
+    getAllVideos,
+    deleteVideo,
+    getVideoById,
 }
 
 export default adminController
