@@ -8,6 +8,11 @@ const DIGEST_ALGO = 'sha512'
 import crypto from 'crypto'
 import Razorpay from 'razorpay'
 
+const razorpayInstance = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+})
+
 const getDetails = async (req, res) => {
     const user = req.user
     if (!user) {
@@ -142,7 +147,7 @@ const updatePassword = async (req, res, next) => {
                 error_description: 'Please verify your OTP first',
             })
         }
-        
+
         if (typeof password !== 'string') return res.status(400).send({ error: 'password should be a string' });
         if (password.includes(' ') || password.length < 5) {
             return res
@@ -219,7 +224,7 @@ const deleteAccount = async (req, res, next) => {
 
 const getFaqs = async (req, res, next) => {
     try {
-        const faqs = await prisma.faq.findMany({orderBy: { createdAt: 'desc' }})
+        const faqs = await prisma.faq.findMany({ orderBy: { createdAt: 'desc' } })
         return res.status(200).send({ status: 200, message: 'FAQs', faqs: faqs })
     } catch (err) {
         return next(err)
@@ -288,43 +293,62 @@ const purchaseAudiobook = async (req, res, next) => {
         const { amount } = req.body;
         const userId = user.id;
 
-        await rzp.orders.create({amount, currency: "INR"}, async (err, order) => {
-            if (err) {
-                throw new Error(JSON.stringify(err));
-            }
-            const createdOrder = await prisma.order.create({
+        const order = await razorpayInstance.orders.create({
+            amount: amount * 100, // amount in paise
+            currency: 'INR',
+        })
+
+        const createdOrder = await prisma.order.create({
+            data: {
                 orderId: order.id,
                 status: 'PENDING',
                 userId: userId
-            });
-            return res.status(200).send({message: 'Order created!', order: createdOrder, key_id: rzp.key_id});
-            
-        })
+            }
+        });
+        return res.status(200).send({ message: 'Order created!', order: createdOrder, key_id: rzp.key_id });
     }
-    catch(error) {
+    catch (error) {
         console.log(error);
-        res.status(403).json({ message: 'Something went wrong', error});
+        res.status(403).json({ message: 'Something went wrong', error });
     }
 }
 
 const updateTransactionStatus = async (req, res, next) => {
     try {
-        const { payment_id, order_id, status} = req.body;
-        const order = await prisma.order.findUnique({ where: {orderId: order_id}});
+        const { payment_id, order_id } = req.body;
+        const order = await prisma.order.findUnique({ where: { orderId: order_id } });
         if (!order) {
-            return res.status(404).json({ message: 'Order not found!'})
+            return res.status(404).json({ message: 'Order not found!' })
         }
-        if (status !== 'SUCCESS' || status !== 'FAILED') {
-            return res.status(400).send({error: 'Invalid status', error_description: 'Status must be SUCCESS OR FAILED'});
-        }
+        const razorpay_signature = req.headers['x-razorpay-signature']
+        if (!razorpay_signature) return res.status(200).send({ status: 400, message: 'x-razorpay-signature' })
+        let sha256 = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        sha256.update(order_id + '|' + payment_id)
 
-        // Update order status and payment id
-        const updatedOrder = await order.update({ paymentId: payment_id, status: status});
-        return res.status(200).send({message: 'Status updated'});
+        const generated_signature = sha256.digest('hex')
+
+        if (generated_signature !== razorpay_signature) {
+            return res.status(400).json({ message: 'Payment verification failed.' })
+        }
+        const payment = await razorpayInstance.payments.fetch(payment_id)
+
+        if (payment.status === 'captured') {
+            const updatedOrder = await prisma.order.update({
+                where: { orderId: order_id },
+                data: { paymentId: payment_id, status: 'SUCCESS' }
+            })
+            return res.status(200).send({ message: 'Status updated', order: updatedOrder });
+        }else {
+            const updatedOrder = await prisma.order.update({
+                where: { orderId: order_id },
+                data: { paymentId: payment_id, status: 'FAILED' }
+            })
+            return res.status(200).send({ message: 'Payment not captured', order: updatedOrder });
+        }
     }
-    catch(error) {
+    catch (error) {
         console.log('Error in updateTransactionStatus:', error);
-        res.status(500).json({ message: 'Transaction update failed', error});
+        res.status(500).json({ message: 'Transaction update failed', error });
     }
 }
 

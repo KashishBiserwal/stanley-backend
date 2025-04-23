@@ -16,7 +16,7 @@ userRouter.get('/audiobooks/:id', userController.getAudioBookById)
 userRouter.get('/videos', userController.getVideos)
 userRouter.get('/videos/:id', userController.getVideoById)
 userRouter.post('/createOrder', userController.purchaseAudiobook)
-userRouter.post('/updateOrder', userController.updateTransactionStatus);
+userRouter.post('/verifyOrder', userController.updateTransactionStatus);
 
 
 export default userRouter
