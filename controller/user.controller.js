@@ -6,6 +6,7 @@ const ITERATION = 100
 const KEYLENGTH = 10
 const DIGEST_ALGO = 'sha512'
 import crypto from 'crypto'
+import Razorpay from 'razorpay'
 
 const getDetails = async (req, res) => {
     const user = req.user
@@ -277,6 +278,56 @@ const getVideoById = async (req, res, next) => {
     }
 }
 
+const purchaseAudiobook = async (req, res, next) => {
+    try {
+        const user = req.user;
+        var rzp = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        })
+        const { amount } = req.body;
+        const userId = user.id;
+
+        await rzp.orders.create({amount, currency: "INR"}, async (err, order) => {
+            if (err) {
+                throw new Error(JSON.stringify(err));
+            }
+            const createdOrder = await prisma.order.create({
+                orderId: order.id,
+                status: 'PENDING',
+                userId: userId
+            });
+            return res.status(200).send({message: 'Order created!', order: createdOrder, key_id: rzp.key_id});
+            
+        })
+    }
+    catch(error) {
+        console.log(error);
+        res.status(403).json({ message: 'Something went wrong', error});
+    }
+}
+
+const updateTransactionStatus = async (req, res, next) => {
+    try {
+        const { payment_id, order_id, status} = req.body;
+        const order = await prisma.order.findUnique({ where: {orderId: order_id}});
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found!'})
+        }
+        if (status !== 'SUCCESS' || status !== 'FAILED') {
+            return res.status(400).send({error: 'Invalid status', error_description: 'Status must be SUCCESS OR FAILED'});
+        }
+
+        // Update order status and payment id
+        const updatedOrder = await order.update({ paymentId: payment_id, status: status});
+        return res.status(200).send({message: 'Status updated'});
+    }
+    catch(error) {
+        console.log('Error in updateTransactionStatus:', error);
+        res.status(500).json({ message: 'Transaction update failed', error});
+    }
+}
+
 const userController = {
     getDetails,
     updateUserType,
@@ -290,6 +341,8 @@ const userController = {
     getAudioBookById,
     getVideos,
     getVideoById,
+    purchaseAudiobook,
+    updateTransactionStatus
 }
 
 export default userController
