@@ -290,8 +290,19 @@ const purchaseAudiobook = async (req, res, next) => {
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET
         })
-        const { amount } = req.body;
+        const { amount, audioBookId } = req.body;
+        if(!amount && !audioBookId) {
+            return res.status(400).send({ message: 'Amount or Audio Book ID not found' });
+        }
         const userId = user.id;
+
+        const audioBook = await prisma.audioBook.findUnique({
+            where: { id: parseInt(audioBookId) },
+        })
+
+        if(!audioBook){
+            return res.status(400).send({ message: 'Audio Book not found' });
+        }
 
         const order = await razorpayInstance.orders.create({
             amount: amount * 100, // amount in paise
@@ -302,7 +313,9 @@ const purchaseAudiobook = async (req, res, next) => {
             data: {
                 orderId: order.id,
                 status: 'PENDING',
-                userId: userId
+                userId: userId,
+                amount: amount,
+                audioBookId: audioBookId,
             }
         });
         return res.status(200).send({ message: 'Order created!', order: createdOrder, key_id: rzp.key_id });
@@ -316,6 +329,10 @@ const purchaseAudiobook = async (req, res, next) => {
 const updateTransactionStatus = async (req, res, next) => {
     try {
         const { payment_id, order_id } = req.body;
+
+        if(!payment_id && !order_id) {
+            return res.status(400).send({ message: 'Payment ID or Order ID not found' });
+        }
         const order = await prisma.order.findUnique({ where: { orderId: order_id } });
         if (!order) {
             return res.status(404).json({ message: 'Order not found!' })

@@ -48,6 +48,7 @@ model AudioBook {
   audio       String
   image       String
   price       Float
+  orders     Order[]
   status      Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -69,6 +70,10 @@ model Order {
   paymentId String?
   orderId   String @unique
   status    String
+  amount    Float?
+  audioBookId Int?
+  audioBook   AudioBook? @relation(fields: [audioBookId], references: [id])
   userId    Int
   user      User   @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }
